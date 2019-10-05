@@ -1,0 +1,37 @@
+This repo contains a solver for the "Numbers" game played on long-running game shows in the UK, France and Australia, a tiny program to generate all possible legal games, and an xz-compressed file containing solutions for all possible (~12 million) games.
+
+Brief rules for the numbers game:
+
+* 6 "source" numbers are chosen from a pool of 24. There are two each of all the digits from 1 to 10, plus one each of 25, 50, 75 and 100.
+* A three-digit "target" number is randomly selected (between 100 and 999)
+* The target number must be reached using the source numbers and the basic numerical operations of addition, subtraction, multiplication and division. These sub-rules apply:
+  * Each source number may only be used in one operation, and each intermediate result can also only be used in one later operation
+  * It is *not* necessary to use all of the source numbers
+  * No intermediate result may be negative
+  * All intermediate results must be integers
+  
+For example, with the source numbers 1 3 7 6 8 3 and target number 250 one possible solution is 8×3=24; 24+1=25; 7+3=10; 25×10=250. Note that here we had 2 3's in the source list so 3 could be used twice.
+
+To build the solver:
+
+    crystal build --release numbers.cr
+
+The program accepts either 7 numbers on the command line (6 source and a target) or lines of 7 space-separated numbers on standard input. To solve the example above:
+
+    numbers 1 3 7 6 8 3 250
+
+To test using the included sample games:
+
+    numbers < samples
+    
+On modern hardware the code will usually solve over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2.
+    
+The file "all-numbers-solutions.xz" includes solutions to all possible games. This can be generated yourself by first building the all-game generator:
+
+    crystal build --release all-games.cr
+    
+Then running it like this:
+
+    all-games | numbers | xz -9 > all-numbers-solutions.xz
+
+This will take about a day on modern hardware. Code is not yet multi-threaded. Although `xz -9` is slow it compresses a lot faster than `numbers` can generate solutions, and has by far the best compression ratio with `numbers` output (more than 50:1).
