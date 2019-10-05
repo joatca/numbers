@@ -63,8 +63,25 @@ struct Game
   ALLOWED_OPERATIONS = [ Add.new, Sub.new, Mul.new, Div.new ]
 
   @best_away : Int32
-  
-  def initialize(@maxaway : Int32, @sources : Array(Int32), @target : Int32)
+
+  def initialize(@quick : Bool, anarchy : Bool, args : Array(String))
+    if anarchy
+      raise "need at least 2 source numbers and a target" unless args.size >= 3
+    else
+      raise "need exactly 6 source numbers and a target" unless args.size == 7
+    end
+    numbers = args.map { |s| s.to_i }
+    @sources, @target = numbers[0...-1].as(Array(Int32)), numbers[-1].as(Int32)
+    if anarchy
+      raise "numbers must be positive" unless @sources.all? { |n| n > 0 }
+      raise "target must be positive" unless @target > 0
+    else
+      raise "numbers may only be either 1..10 or 25/50/75/100" unless @sources.all? { |n|
+        (n >= 1 && n <= 10) || { 25, 50, 75, 100 }.includes?(n)
+      }
+      raise "target must be 100..999" unless @target >= 100 && @target <= 999
+    end
+    @maxaway = anarchy ? @target : 9
     # the maximum entries needed for each of these arrays can't exceed MAXNUMS so we preallocate enough space,
     # and thus avoid dynamically resizing; we manage these arrays internally to the class instead of passing
     # around new objects for performance reasons and to avoid putting pressure on the garbage collector
@@ -157,29 +174,24 @@ struct Game
     puts (away > 0 ? " (#{away} away)" : "")
   end
   
-  def solve(depths : Enumerable(Int32), show_problem : Bool)
+  def solve(show_problem : Bool)
+    depths = if @quick
+               [ @sources.size - 1 ]
+             else
+               (2..(@sources.size - 1))
+             end
     print "#{@sources.join(",")};#{@target} " if show_problem
     # if any of the source numbers match the target then just print that and exit
     if @sources.includes?(@target)
       puts "#{@target}=#{@target}"
     else
-      # this converts e.g. [25, 50, 1, 1, 6, 7] to [[1, 1], [6, 7, 25, 50 ]], i.e. sort everything then separate
-      # the ones from the non-ones, with the first non-one being the smallest
-      ones, rest = @sources.sort.partition { |n| n == 1 }
-      rest[0] += ones.size # if we have any 1s, add them to the next highest number (the lowest of the remaining
-                           # numbers) before multiplying so we get the max possible result - if the resulting
-                           # product is less than the target then there can be no exact solution
-      if rest.product < @target
-        puts "none"
+      depths.each do |max_depth|
+        return if solve_depth(max_depth)
+      end
+      if @best_away <= @maxaway
+        show_steps(@best, @best_away)
       else
-        depths.each do |max_depth|
-          return if solve_depth(max_depth)
-        end
-        if @best_away <= @maxaway
-          show_steps(@best, @best_away)
-        else
-          puts "none"
-        end
+        puts "none"
       end
     end
   end
@@ -208,39 +220,12 @@ OptionParser.parse do |parser|
   end
 end
 
-def do_arguments(quick : Bool, args : Array(String), anarchy, show_problem = true)
-  if anarchy
-    raise "need at least 2 source numbers and a target" unless args.size >= 3
-  else
-    raise "need exactly 6 source numbers and a target" unless args.size == 7
-  end
-  depths = if quick
-             [ args.size - 1 ]
-           else
-             (2..(args.size - 1))
-           end
-  numbers = args.map { |s| s.to_i }
-  sources, target = numbers[0...-1], numbers[-1]
-  if anarchy
-    raise "numbers must be positive" unless sources.all? { |n| n > 0 }
-    raise "target must be positive" unless target > 0
-  else
-    raise "numbers may only be either 1..10 or 25/50/75/100" unless sources.all? { |n|
-      (n >= 1 && n <= 10) || { 25, 50, 75, 100 }.includes?(n)
-    }
-    raise "target must be 100..999" unless target >= 100 && target <= 999
-  end
-  maxaway = anarchy ? target : 9
-  Game.new(maxaway, sources, target).solve(depths, show_problem)
-end
-
 begin
   if ARGV.size > 0
-    do_arguments(quick, ARGV, anarchy, false)
+    Game.new(quick, anarchy, ARGV).solve(false)
   else
     STDIN.each_line do |line|
-      # this will raise if something isn't a number but we catch it further down
-      do_arguments(quick, line.chomp.split, anarchy)
+      Game.new(quick, anarchy, line.chomp.split).solve(true)
     end
   end
 rescue e : Exception
