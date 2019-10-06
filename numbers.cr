@@ -165,8 +165,7 @@ struct Game
         end
       end
     end
-    # with at least 2 numbers in the stack we can try operators; this expression calls try_op on each of
-    # ALLOWED_OPERATIONS in sequence and returns true as soon as any of the calls return true, false if none do
+    # with at least 2 numbers in the stack we can try operators
     return ALLOWED_OPERATIONS.any? { |op| try_op(depth, op) } if @stack.size >= 2
     # and if we get this far nothing worked
     return false
