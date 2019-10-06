@@ -38,9 +38,10 @@ end
 
 class Mul
   def calc(v1, v2 : Int32)
-    if v1 >= v2 # we can apply this because multiplication is commutative - we can ignore half of the combinations
-      result = v1 * v2
-      yield result if result != v1 && result != v2
+    # we can apply this because multiplication is commutative - we can ignore half of the combinations; we can
+    # also ignore any case where either op is 1 since that'll result in the other operand (a useless operation)
+    if v1 > 1 && v2 > 1 && v1 >= v2
+      yield v1 * v2
     end
   end
 
