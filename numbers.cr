@@ -27,7 +27,9 @@ class Sub
   def calc(v1, v2 : Int32)
     if v1 > v2 # intermediate results may not be negative
       result = v1 - v2
-      yield result if result != v1 && result != v2
+      # neither operand is zero so the result can never be v1; if it's v2 this is a useless operation so don't
+      # bother yielding
+      yield result if result != v2
     end
   end
 
