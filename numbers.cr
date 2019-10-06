@@ -187,6 +187,8 @@ struct Game
     if @sources.includes?(@target)
       puts "#{@target}=#{@target}"
     else
+      # when we have more than one depth this could take a bit longer, but will find the shortest number of
+      # steps so could also be faster; the results are aesthetically better
       depths.each do |max_depth|
         return if solve_depth(max_depth)
       end
