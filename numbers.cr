@@ -16,8 +16,7 @@ end
 class Add
   def calc(v1, v2 : Int32)
     if v1 >= v2 # we can apply this because addition is commutative - we can ignore half of the combinations
-      result = v1 + v2
-      yield result if result != v1 && result != v2
+      yield v1 + v2
     end
   end
 
