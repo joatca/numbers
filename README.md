@@ -17,6 +17,8 @@ To build the solver:
 
     crystal build --release numbers.cr
 
+See https://crystal-lang.org/reference/installation/ if you don't have the Crystal compiler.
+
 The program accepts either 7 numbers on the command line (6 source and a target) or lines of 7 space-separated numbers on standard input. To solve the example above:
 
     numbers 1 3 7 6 8 3 250
@@ -25,7 +27,7 @@ To test using the included sample games:
 
     numbers < samples
     
-On modern hardware the code will solve over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2.
+The algorithm is basically exhaustive search with some simple trimming of the expression space for useless or disallowed operations. (A useless operation is, for example, 6÷1 since the result is one of the operands so doesn't accomplish anything.) On relatively modern hardware this still solves over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2. Don't feed in crazy values; all calculations are done in 32-bit integers and there's no protection against overflow.
     
 The file "all-numbers-solutions.xz" includes solutions to all possible games (not counting anarchy mode). This can be generated yourself by first building the all-game generator:
 
@@ -35,4 +37,4 @@ Then running it like this:
 
     all-games | numbers | xz -9 > all-numbers-solutions.xz
 
-This will take about a day on modern hardware. Code is not yet multi-threaded. Although `xz -9` is slow it compresses a lot faster than `numbers` can generate solutions, and has by far the best compression ratio with `numbers` output (more than 50:1).
+This will take less than a day on modern hardware. The code is not multi-threaded. Although `xz -9` is slow it compresses a lot faster than `numbers` can generate solutions, and has by far the best compression ratio with `numbers` output (more than 50:1).
