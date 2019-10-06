@@ -9,6 +9,7 @@ Brief rules for the numbers game:
   * It is *not* necessary to use all of the source numbers
   * No intermediate result may be negative
   * All intermediate results must be integers
+* Maximum points are scored for getting the exact target. Lower points are scored for getting up to 9 away. If the closest number attainable is 10 or more away, nothing is scored and there is considered to be no solution.
   
 For example, with the source numbers 1 3 7 6 8 3 and target number 250 one possible solution is 8×3=24; 24+1=25; 7+3=10; 25×10=250. Note that here we had 2 3's in the source list so 3 could be used twice.
 
@@ -24,9 +25,9 @@ To test using the included sample games:
 
     numbers < samples
     
-On modern hardware the code will usually solve over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2.
+On modern hardware the code will solve over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2.
     
-The file "all-numbers-solutions.xz" includes solutions to all possible games. This can be generated yourself by first building the all-game generator:
+The file "all-numbers-solutions.xz" includes solutions to all possible games (not counting anarchy mode). This can be generated yourself by first building the all-game generator:
 
     crystal build --release all-games.cr
     
