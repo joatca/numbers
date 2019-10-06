@@ -27,7 +27,7 @@ To test using the included sample games:
 
     numbers < samples
     
-The algorithm is basically exhaustive search with some simple trimming of the expression space for useless or disallowed operations. (A useless operation is, for example, 6÷1 since the result is one of the operands so doesn't accomplish anything.) On relatively modern hardware this still solves over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2. Don't feed in crazy values; all calculations are done in 32-bit integers and there's no protection against overflow.
+The algorithm is basically exhaustive search with some simple trimming of the expression space for useless or disallowed operations. (A useless operation is, for example, 6÷1 since the result is one of the operands so doesn't accomplish anything.) On relatively modern hardware this still solves over 100 games per second. You can also add the `-a` flag to enable "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, there can be any number of source numbers >=2, and a solution is printed no matter how far away it is from the target. Don't feed in crazy values; all calculations are done in 32-bit integers and there's no protection against overflow.
     
 The file "all-numbers-solutions.xz" includes solutions to all possible games (not counting anarchy mode). This can be generated yourself by first building the all-game generator:
 
