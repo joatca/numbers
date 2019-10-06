@@ -40,9 +40,7 @@ class Mul
   def calc(v1, v2 : Int32)
     # we can apply this because multiplication is commutative - we can ignore half of the combinations; we can
     # also ignore any case where either op is 1 since that'll result in the other operand (a useless operation)
-    if v1 > 1 && v2 > 1 && v1 >= v2
-      yield v1 * v2
-    end
+    yield v1 * v2 if v1 > 1 && v2 > 1 && v1 >= v2
   end
 
   def sym; '×'; end
@@ -50,10 +48,9 @@ end
 
 class Div
   def calc(v1, v2 : Int32)
-    if v1 % v2 == 0 # integer division only - since we never have zeroes this also checks that v1 > v2
-      result = v1 // v2
-      yield result if result != v1 && result != v2
-    end
+    # integer division only - since we never have zeroes this also checks that v1 > v2; we can also ignore when
+    # v2 is 1 since the result would be v1, a useless operation
+    yield v1 // v2 if v2 > 1 && v1 % v2 == 0
   end
 
   def sym; '÷'; end
