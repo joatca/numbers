@@ -13,11 +13,15 @@ struct Step
   end
 end
 
+# Note: in the four operation classes below the #calc method yields a value if the operation was useful rather
+# than returning either a value or an error; this means that we perform the check only in the #calc method and
+# don't require another test in the code receiving the value: when the operation isn't useful the block never
+# gets called so no extra check is required
+
 class Add
   def calc(v1, v2 : Int32)
-    if v1 >= v2 # we can apply this because addition is commutative - we can ignore half of the combinations
-      yield v1 + v2 # always yield - the result can never be the same as either of the operands
-    end
+    # we can apply this because addition is commutative - we can ignore half of the combinations
+    yield v1 + v2 if v1 >= v2
   end
 
   def sym; '+'; end
