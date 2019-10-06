@@ -1,4 +1,5 @@
 require "option_parser"
+require "bit_array"
 
 # using a struct here is twice as fast as a class because it structs are value types and stack-allocated so
 # there's much less load on the garbage collector
@@ -91,7 +92,7 @@ struct Game
     maxnums = @sources.size
     @stack = Array(Int32).new(maxnums) # expression stack
     @steps = Array(Step).new(maxnums) # record of the steps so far
-    @avail = Array(Bool).new(maxnums, true) # whether each number has been used
+    @avail = BitArray.new(maxnums, true) # whether each number has been used
     @best = Array(Step).new(maxnums) # best one within maxaway found so far
     @best_away = @maxaway + 1 # something greater than the max value that can trigger recording a best
   end
