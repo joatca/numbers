@@ -179,9 +179,9 @@ struct Game
   
   def solve(show_problem : Bool)
     depths = if @quick
-               [ @sources.size - 1 ]
+               [ @sources.size ]
              else
-               (2..(@sources.size - 1))
+               (2..(@sources.size))
              end
     print "#{@sources.join(",")};#{@target} " if show_problem
     # if any of the source numbers match the target then just print that and exit
@@ -189,7 +189,7 @@ struct Game
       puts "#{@target}=#{@target}"
     else
       # when we have more than one depth this could take a bit longer, but will find the shortest number of
-      # steps so could also be faster; the results are aesthetically better
+      # steps so could also be faster and the results are aesthetically better
       depths.each do |max_depth|
         return if solve_depth(max_depth)
       end
