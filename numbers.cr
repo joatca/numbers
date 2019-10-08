@@ -5,7 +5,7 @@ require "bit_array"
 # there's much less load on the garbage collector
 struct Step
   
-  def initialize(@op : Char, @v1 : Int32, @v2 : Int32, @result : Int32)
+  def initialize(@op : Char, @v1 : Int64, @v2 : Int64, @result : Int64)
   end
   
   # this enables the @steps.join output trick in Game#show_steps
@@ -20,7 +20,7 @@ end
 # gets called so no extra check is required
 
 class Add
-  def calc(v1, v2 : Int32)
+  def calc(v1, v2 : Int64)
     # we can apply this because addition is commutative - we can ignore half of the combinations
     yield v1 + v2 if v1 >= v2
   end
@@ -29,7 +29,7 @@ class Add
 end
 
 class Sub
-  def calc(v1, v2 : Int32)
+  def calc(v1, v2 : Int64)
     if v1 > v2 # intermediate results may not be negative
       result = v1 - v2
       # neither operand is zero so the result can never be v1; if it's v2 this is a useless operation so don't
@@ -42,20 +42,20 @@ class Sub
 end
 
 class Mul
-  def calc(v1, v2 : Int32)
+  def calc(v1, v2 : Int64)
     # we can apply this because multiplication is commutative - we can ignore half of the combinations; we can
     # also ignore any case where either op is 1 since that'll result in the other operand (a useless operation)
-    yield v1 * v2 if v1 > 1 && v2 > 1 && v1 >= v2
+    yield v1 * v2 if v1 > 1_i64 && v2 > 1 && v1 >= v2
   end
 
   def sym; '×'; end
 end
 
 class Div
-  def calc(v1, v2 : Int32)
+  def calc(v1, v2 : Int64)
     # integer division only - since we never have zeroes this also checks that v1 > v2; we can also ignore when
     # v2 is 1 since the result would be v1, a useless operation
-    yield v1 // v2 if v2 > 1 && v1 % v2 == 0
+    yield v1 // v2 if v2 > 1_i64 && v1 % v2 == 0_i64
   end
 
   def sym; '÷'; end
@@ -66,7 +66,7 @@ alias Op = Add | Sub | Mul | Div
 struct Game
   ALLOWED_OPERATIONS = [ Add.new, Sub.new, Mul.new, Div.new ]
 
-  @best_away : Int32
+  @best_away : Int64
 
   def initialize(@quick : Bool, anarchy : Bool, args : Array(String))
     if anarchy
@@ -74,27 +74,27 @@ struct Game
     else
       raise "need exactly 6 source numbers and a target" unless args.size == 7
     end
-    numbers = args.map { |s| s.to_i }
-    @sources, @target = numbers[0...-1].as(Array(Int32)), numbers[-1].as(Int32)
+    numbers = args.map { |s| s.to_i64 }
+    @sources, @target = numbers[0...-1].as(Array(Int64)), numbers[-1].as(Int64)
     if anarchy
       raise "numbers must be positive" unless @sources.all? { |n| n > 0 }
       raise "target must be positive" unless @target > 0
     else
       raise "numbers may only be either 1..10 or 25/50/75/100" unless @sources.all? { |n|
-        (n >= 1 && n <= 10) || { 25, 50, 75, 100 }.includes?(n)
+        (n >= 1_i64 && n <= 10_i64) || { 25_i64, 50_i64, 75_i64, 100_i64 }.includes?(n)
       }
-      raise "target must be 100..999" unless @target >= 100 && @target <= 999
+      raise "target must be 100..999" unless @target >= 100_i64 && @target <= 999_i64
     end
-    @maxaway = anarchy ? @target : 9
+    @maxaway = anarchy ? @target : 9_i64
     # the maximum entries needed for each of these arrays can't exceed MAXNUMS so we preallocate enough space,
     # and thus avoid dynamically resizing; we manage these arrays internally to the class instead of passing
     # around new objects for performance reasons and to avoid putting pressure on the garbage collector
     maxnums = @sources.size
-    @stack = Array(Int32).new(maxnums) # expression stack
+    @stack = Array(Int64).new(maxnums) # expression stack
     @steps = Array(Step).new(maxnums) # record of the steps so far
     @avail = BitArray.new(maxnums, true) # whether each number has been used
     @best = Array(Step).new(maxnums) # best one within maxaway found so far
-    @best_away = @maxaway + 1 # something greater than the max value that can trigger recording a best
+    @best_away = @maxaway + 1_i64 # something greater than the max value that can trigger recording a best
   end
 
   # abstract away the push-a-step, do-something, pop-step action
@@ -105,7 +105,7 @@ struct Game
   end
 
   # abstract away the push-a-result, do-something, pop-the-result action
-  def with_value_on_stack(value : Int32)
+  def with_value_on_stack(value : Int64)
     @stack.push(value)
     yield
     @stack.pop
@@ -172,9 +172,9 @@ struct Game
     return false
   end
 
-  def show_steps(steps, away = 0)
+  def show_steps(steps, away = 0_i64)
     steps.join("; ", STDOUT) # works because of Step#to_s
-    puts (away > 0 ? " (#{away} away)" : "")
+    puts (away > 0_i64 ? " (#{away} away)" : "")
   end
   
   def solve(show_problem : Bool)
