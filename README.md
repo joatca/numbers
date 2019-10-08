@@ -37,4 +37,4 @@ Then running it like this:
 
     all-games | numbers | xz -9 > all-numbers-solutions.xz
 
-This will take less than a day on modern hardware. The code is not multi-threaded. Although `xz -9` is slow it compresses a lot faster than `numbers` can generate solutions, and has by far the best compression ratio with `numbers` output (more than 50:1).
+This will take less than a day on modern hardware. The code is not multi-threaded. Although `xz -9` is slow it compresses a lot faster than `numbers` can generate solutions, and has by far the best compression ratio with `numbers` output (more than 10:1).
