@@ -1,4 +1,4 @@
-This repo contains an xz-compressed file "all-games-solutions.xz" containing solutions for all possible (~12 million) possible variants of the "Numbers" game (as played on long-running game shows in the UK, France and Australia), as well as the solver code used to generate it and a tiny program to generate all possible legal games for the solver.
+This repo contains an xz-compressed file "all-games-solutions.xz" containing solutions for all ~12 million possible variants of the "Numbers" game (as played on long-running game shows in the UK, France and Australia), as well as the solver code used to generate it and a tiny program to generate all possible legal games for the solver.
 
 Brief rules for the Numbers game:
 
