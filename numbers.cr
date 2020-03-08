@@ -68,7 +68,8 @@ struct Game
 
   @best_away : Int64
 
-  def initialize(@max_steps : Int32, @quick : Bool, anarchy : Bool, @exact : Bool, args : Array(String))
+  def initialize(@max_steps : Int32, @quick : Bool, anarchy : Bool, @exact : Bool, @just_one : Bool,
+                 args : Array(String))
     if anarchy
       raise "need at least 2 source numbers and a target" unless args.size >= 3
     else
@@ -95,6 +96,7 @@ struct Game
     @avail = BitArray.new(maxnums, true) # whether each number has been used
     @best = Array(Step).new(maxnums) # best one within maxaway found so far
     @best_away = @maxaway + 1_i64 # something greater than the max value that can trigger recording a best
+    @found_exact = false
   end
 
   # abstract away the push-a-step, do-something, pop-step action
@@ -129,6 +131,7 @@ struct Game
           if result == @target
             show_steps(@steps, 0)
             found = true
+            @found_exact = true
           else
             # if not the target, is this the closest we've gotten to the target yet?
             away = (result - @target).abs
@@ -147,7 +150,7 @@ struct Game
         end
       end
     end
-    found
+    found && @just_one
   end
 
   def solve_depth(depth : Int32)
@@ -191,15 +194,21 @@ struct Game
       # when we have more than one depth this could take a bit longer, but will find the shortest number of
       # steps so could also be faster and the results are aesthetically better
       depths.each do |max_depth|
-        return if solve_depth(max_depth)
+        if solve_depth(max_depth)
+          return if @just_one # stop here if we only need to find one
+          # otherwise keep going - why not?
+        end
       end
-      if @best_away <= @maxaway
-        print "#{@sources.join(",")};#{@target} " if show_problem
-        show_steps(@best, @best_away)
-      else
-        unless @exact
+      if ! @found_exact
+        # only print non-exact solutions if we didn't find any exact ones
+        if @best_away <= @maxaway
           print "#{@sources.join(",")};#{@target} " if show_problem
-          puts "none"
+          show_steps(@best, @best_away)
+        else
+          unless @exact
+            print "#{@sources.join(",")};#{@target} " if show_problem
+            puts "none"
+          end
         end
       end
     end
@@ -210,6 +219,7 @@ end
 quick = false
 anarchy = false
 exact = false
+just_one = true
 max_steps = 9999
 
 OptionParser.parse do |parser|
@@ -222,6 +232,9 @@ OptionParser.parse do |parser|
   }
   parser.on("-e", "--exact", "print exact solutions only, otherwise nothing") {
     exact = true
+  }
+  parser.on("-m", "--many", "if many exact solutions exist then print all of them") {
+    just_one = false
   }
   parser.on("-s STEPS", "--max-steps=STEPS", "only print solutions with up to STEPS steps") { |s|
     max_steps = s.to_i
@@ -240,10 +253,10 @@ end
 
 begin
   if ARGV.size > 0
-    Game.new(max_steps, quick, anarchy, exact, ARGV).solve(false)
+    Game.new(max_steps, quick, anarchy, exact, just_one, ARGV).solve(false)
   else
     STDIN.each_line do |line|
-      Game.new(max_steps, quick, anarchy, exact, line.chomp.split).solve(true)
+      Game.new(max_steps, quick, anarchy, exact, just_one, line.chomp.split).solve(true)
     end
   end
 rescue e : Exception
