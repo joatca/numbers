@@ -68,7 +68,7 @@ struct Game
 
   @best_away : Int64
 
-  def initialize(@quick : Bool, anarchy : Bool, args : Array(String))
+  def initialize(@max_steps : Int32, @quick : Bool, anarchy : Bool, @exact : Bool, args : Array(String))
     if anarchy
       raise "need at least 2 source numbers and a target" unless args.size >= 3
     else
@@ -85,7 +85,7 @@ struct Game
       }
       raise "target must be 100..999" unless @target >= 100_i64 && @target <= 999_i64
     end
-    @maxaway = anarchy ? @target : 9_i64
+    @maxaway = @exact ? 0_i64 : 9_i64
     # the maximum entries needed for each of these arrays can't exceed MAXNUMS so we preallocate enough space,
     # and thus avoid dynamically resizing; we manage these arrays internally to the class instead of passing
     # around new objects for performance reasons and to avoid putting pressure on the garbage collector
@@ -178,12 +178,12 @@ struct Game
   end
   
   def solve(show_problem : Bool)
+    max_depth = [ @sources.size, @max_steps+1 ].min
     depths = if @quick
-               [ @sources.size ]
+               [ max_depth ]
              else
-               (2..(@sources.size))
+               (2..max_depth)
              end
-    print "#{@sources.join(",")};#{@target} " if show_problem
     # if any of the source numbers match the target then just print that and exit
     if @sources.includes?(@target)
       puts "#{@target}=#{@target}"
@@ -194,9 +194,13 @@ struct Game
         return if solve_depth(max_depth)
       end
       if @best_away <= @maxaway
+        print "#{@sources.join(",")};#{@target} " if show_problem
         show_steps(@best, @best_away)
       else
-        puts "none"
+        unless @exact
+          print "#{@sources.join(",")};#{@target} " if show_problem
+          puts "none"
+        end
       end
     end
   end
@@ -205,6 +209,8 @@ end
 
 quick = false
 anarchy = false
+exact = false
+max_steps = 9999
 
 OptionParser.parse do |parser|
   parser.banner = "Usage: #{PROGRAM_NAME}"
@@ -213,6 +219,13 @@ OptionParser.parse do |parser|
   }
   parser.on("-a", "--anarchy", "any target > 0, any source numbers > 0, any number of source numbers") {
     anarchy = true
+  }
+  parser.on("-e", "--exact", "print exact solutions only, otherwise nothing") {
+    exact = true
+  }
+  parser.on("-s STEPS", "--max-steps=STEPS", "only print solutions with up to STEPS steps") { |s|
+    max_steps = s.to_i
+    raise "need at least 1 step" unless max_steps >= 1
   }
   parser.on("-h", "--help", "Show this help") {
     puts parser
@@ -227,10 +240,10 @@ end
 
 begin
   if ARGV.size > 0
-    Game.new(quick, anarchy, ARGV).solve(false)
+    Game.new(max_steps, quick, anarchy, exact, ARGV).solve(false)
   else
     STDIN.each_line do |line|
-      Game.new(quick, anarchy, line.chomp.split).solve(true)
+      Game.new(max_steps, quick, anarchy, exact, line.chomp.split).solve(true)
     end
   end
 rescue e : Exception
