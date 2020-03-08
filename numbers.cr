@@ -182,7 +182,7 @@ struct Game
   
   def solve(show_problem : Bool)
     max_depth = [ @sources.size, @max_steps+1 ].min
-    depths = if @quick
+    depths = if @quick || !@just_one
                [ max_depth ]
              else
                (2..max_depth)

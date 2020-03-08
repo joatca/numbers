@@ -34,7 +34,7 @@ Some extra fun flags:
 * `-a`: "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2
 * `-e`: only show exact solutions
 * `-s STEPS`: only find solutions up to STEPS steps, rather than the regular limit of source-numbers - 1
-* `-m`: if many exact solutions exist then print all of them rather than just the first one found (if no exact solutions are found a maximum of one inexact solution will be printed)
+* `-m`: if many exact solutions exist then print all of them rather than just the first one found (implies `-q`; if no exact solutions are found a maximum of one inexact solution will be printed)
 
 Don't feed in crazy values; all calculations are done in 64-bit integers and there's no protection against overflow.
     
