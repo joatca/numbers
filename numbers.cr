@@ -1,11 +1,14 @@
 require "option_parser"
 require "bit_array"
+require "big"
+
+alias Num = Int64 | BigInt
 
 # using a struct here is twice as fast as a class because it structs are value types and stack-allocated so
 # there's much less load on the garbage collector
 struct Step
   
-  def initialize(@op : Char, @v1 : Int64, @v2 : Int64, @result : Int64)
+  def initialize(@op : Char, @v1 : Num, @v2 : Num, @result : Num)
   end
   
   # this enables the @steps.join output trick in Game#show_steps
@@ -20,7 +23,7 @@ end
 # gets called so no extra check is required
 
 class Add
-  def calc(v1, v2 : Int64)
+  def calc(v1, v2 : Num)
     # we can apply this because addition is commutative - we can ignore half of the combinations
     yield v1 + v2 if v1 >= v2
   end
@@ -29,7 +32,7 @@ class Add
 end
 
 class Sub
-  def calc(v1, v2 : Int64)
+  def calc(v1, v2 : Num)
     if v1 > v2 # intermediate results may not be negative
       result = v1 - v2
       # neither operand is zero so the result can never be v1; if it's v2 this is a useless operation so don't
@@ -42,7 +45,7 @@ class Sub
 end
 
 class Mul
-  def calc(v1, v2 : Int64)
+  def calc(v1, v2 : Num)
     # we can apply this because multiplication is commutative - we can ignore half of the combinations; we can
     # also ignore any case where either op is 1 since that'll result in the other operand (a useless operation)
     yield v1 * v2 if v1 > 1_i64 && v2 > 1 && v1 >= v2
@@ -52,10 +55,12 @@ class Mul
 end
 
 class Div
-  def calc(v1, v2 : Int64)
+  def calc(v1, v2 : Num)
     # integer division only - since we never have zeroes this also checks that v1 > v2; we can also ignore when
     # v2 is 1 since the result would be v1, a useless operation
-    yield v1 // v2 if v2 > 1_i64 && v1 % v2 == 0_i64
+    # note - can't use % operator here because it's not defined between two BigInts
+    result = v1 // v2
+    yield result if v2 > 1_i64 && result * v2 == v1
   end
 
   def sym; '÷'; end
@@ -66,17 +71,18 @@ alias Op = Add | Sub | Mul | Div
 struct Game
   ALLOWED_OPERATIONS = [ Add.new, Sub.new, Mul.new, Div.new ]
 
-  @best_away : Int64
+  @best_away : Num
+  @maxaway : Num
 
-  def initialize(@max_steps : Int32, @quick : Bool, anarchy : Bool, @exact : Bool, @just_one : Bool,
+  def initialize(@max_steps : Int32, @big : Bool, @quick : Bool, anarchy : Bool, @exact : Bool, @just_one : Bool,
                  args : Array(String))
     if anarchy
       raise "need at least 2 source numbers and a target" unless args.size >= 3
     else
       raise "need exactly 6 source numbers and a target" unless args.size == 7
     end
-    numbers = args.map { |s| s.to_i64 }
-    @sources, @target = numbers[0...-1].as(Array(Int64)), numbers[-1].as(Int64)
+    numbers = args.map { |s| @big ? s.to_big_i : s.to_i64 }
+    @sources, @target = numbers[0...-1].as(Array(Num)), numbers[-1].as(Num)
     if anarchy
       raise "numbers must be positive" unless @sources.all? { |n| n > 0 }
       raise "target must be positive" unless @target > 0
@@ -86,12 +92,13 @@ struct Game
       }
       raise "target must be 100..999" unless @target >= 100_i64 && @target <= 999_i64
     end
-    @maxaway = @exact ? 0_i64 : 9_i64
+    max = @exact ? 0_i64 : 9_i64
+    @maxaway = @big ? BigInt.new(max) : max
     # the maximum entries needed for each of these arrays can't exceed MAXNUMS so we preallocate enough space,
     # and thus avoid dynamically resizing; we manage these arrays internally to the class instead of passing
     # around new objects for performance reasons and to avoid putting pressure on the garbage collector
     maxnums = @sources.size
-    @stack = Array(Int64).new(maxnums) # expression stack
+    @stack = Array(Num).new(maxnums) # expression stack
     @steps = Array(Step).new(maxnums) # record of the steps so far
     @avail = BitArray.new(maxnums, true) # whether each number has been used
     @best = Array(Step).new(maxnums) # best one within maxaway found so far
@@ -107,7 +114,7 @@ struct Game
   end
 
   # abstract away the push-a-result, do-something, pop-the-result action
-  def with_value_on_stack(value : Int64)
+  def with_value_on_stack(value : Num)
     @stack.push(value)
     yield
     @stack.pop
@@ -216,6 +223,7 @@ struct Game
 
 end
 
+big = false
 quick = false
 anarchy = false
 exact = false
@@ -240,6 +248,9 @@ OptionParser.parse do |parser|
     max_steps = s.to_i
     raise "need at least 1 step" unless max_steps >= 1
   }
+  parser.on("-b", "--big", "use arbitrary-precision integer arithmetic in anarchy mode") {
+    big = true
+  }
   parser.on("-h", "--help", "Show this help") {
     puts parser
     exit(0)
@@ -253,10 +264,10 @@ end
 
 begin
   if ARGV.size > 0
-    Game.new(max_steps, quick, anarchy, exact, just_one, ARGV).solve(false)
+    Game.new(max_steps, big, quick, anarchy, exact, just_one, ARGV).solve(false)
   else
     STDIN.each_line do |line|
-      Game.new(max_steps, quick, anarchy, exact, just_one, line.chomp.split).solve(true)
+      Game.new(max_steps, big, quick, anarchy, exact, just_one, line.chomp.split).solve(true)
     end
   end
 rescue e : Exception
