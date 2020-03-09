@@ -32,7 +32,7 @@ The algorithm is basically exhaustive search with some simple trimming of the ex
 
 Some extra fun flags:
 * `-q`: "quick mode": normally short solutions are checked first, this searches for a solution of any length (usually faster)
-* `-a`: "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2
+* `-a`: "anarchy mode": source numbers are no longer restricted to the pool, target numbers can be any positive integer, and there can be any number of source numbers >=2; the algorithm is roughly O(n^2) so if you add lots of source numbers it gets really slow
 * `-e`: only show exact solutions
 * `-s STEPS`: only find solutions up to STEPS steps, rather than the regular limit of source-numbers - 1
 * `-m`: if many exact solutions exist then print all of them rather than just the first one found (implies `-q`; if no exact solutions are found a maximum of one inexact solution will be printed)
