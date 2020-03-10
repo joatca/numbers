@@ -74,16 +74,15 @@ struct Game
   @best_away : Num
   @maxaway : Num
 
-  def initialize(@max_steps : Int32, @big : Bool, @quick : Bool, anarchy : Bool, @exact : Bool, @just_one : Bool,
-                 args : Array(String))
-    if anarchy
+  def initialize(@conf : Config, args : Array(String))
+    if @conf.anarchy
       raise "need at least 2 source numbers and a target" unless args.size >= 3
     else
       raise "need exactly 6 source numbers and a target" unless args.size == 7
     end
-    numbers = args.map { |s| @big ? s.to_big_i : s.to_i64 }
+    numbers = args.map { |s| @conf.big ? s.to_big_i : s.to_i64 }
     @sources, @target = numbers[0...-1].as(Array(Num)), numbers[-1].as(Num)
-    if anarchy
+    if @conf.anarchy
       raise "numbers must be positive" unless @sources.all? { |n| n > 0 }
       raise "target must be positive" unless @target > 0
     else
@@ -92,8 +91,8 @@ struct Game
       }
       raise "target must be 100..999" unless @target >= 100_i64 && @target <= 999_i64
     end
-    max = @exact ? 0_i64 : 9_i64
-    @maxaway = @big ? BigInt.new(max) : max
+    max = @conf.exact ? 0_i64 : 9_i64
+    @maxaway = @conf.big ? BigInt.new(max) : max
     # the maximum entries needed for each of these arrays can't exceed MAXNUMS so we preallocate enough space,
     # and thus avoid dynamically resizing; we manage these arrays internally to the class instead of passing
     # around new objects for performance reasons and to avoid putting pressure on the garbage collector
@@ -157,7 +156,7 @@ struct Game
         end
       end
     end
-    found && @just_one
+    found && @conf.just_one
   end
 
   def solve_depth(depth : Int32)
@@ -188,8 +187,8 @@ struct Game
   end
   
   def solve(show_problem : Bool)
-    max_depth = [ @sources.size, @max_steps+1 ].min
-    depths = if @quick || !@just_one
+    max_depth = [ @sources.size, @conf.max_steps+1 ].min
+    depths = if @conf.quick || !@conf.just_one
                [ max_depth ]
              else
                (2..max_depth)
@@ -202,7 +201,7 @@ struct Game
       # steps so could also be faster and the results are aesthetically better
       depths.each do |max_depth|
         if solve_depth(max_depth)
-          return if @just_one # stop here if we only need to find one
+          return if @conf.just_one # stop here if we only need to find one
           # otherwise keep going - why not?
         end
       end
@@ -212,7 +211,7 @@ struct Game
           print "#{@sources.join(",")};#{@target} " if show_problem
           show_steps(@best, @best_away)
         else
-          unless @exact
+          unless @conf.exact
             print "#{@sources.join(",")};#{@target} " if show_problem
             puts "none"
           end
@@ -223,51 +222,61 @@ struct Game
 
 end
 
-big = false
-quick = false
-anarchy = false
-exact = false
-just_one = true
-max_steps = 9999
+class Config
 
-OptionParser.parse do |parser|
-  parser.banner = "Usage: #{PROGRAM_NAME}"
-  parser.on("-q", "--quick", "find any solution instead of shortest solution (faster)") {
-    quick = true
-  }
-  parser.on("-a", "--anarchy", "any target > 0, any source numbers > 0, any number of source numbers") {
-    anarchy = true
-  }
-  parser.on("-e", "--exact", "print exact solutions only, otherwise nothing") {
-    exact = true
-  }
-  parser.on("-m", "--many", "if many exact solutions exist then print all of them") {
-    just_one = false
-  }
-  parser.on("-s STEPS", "--max-steps=STEPS", "only print solutions with up to STEPS steps") { |s|
-    max_steps = s.to_i
-    raise "need at least 1 step" unless max_steps >= 1
-  }
-  parser.on("-b", "--big", "use arbitrary-precision integer arithmetic in anarchy mode") {
-    big = true
-  }
-  parser.on("-h", "--help", "Show this help") {
-    puts parser
-    exit(0)
-  }
-  parser.invalid_option do |flag|
-    STDERR.puts "ERROR: #{flag} is not a valid option."
-    STDERR.puts parser
-    exit(1)
+  getter big, quick, anarchy, exact, just_one, max_steps
+  
+  def initialize
+    @big = false
+    @quick = false
+    @anarchy = false
+    @exact = false
+    @just_one = true
+    @max_steps = 9999
+
+    OptionParser.parse do |parser|
+      parser.banner = "Usage: #{PROGRAM_NAME}"
+      parser.on("-q", "--quick", "find any solution instead of shortest solution (faster)") {
+        @quick = true
+      }
+      parser.on("-a", "--anarchy", "any target > 0, any source numbers > 0, any number of source numbers") {
+        @anarchy = true
+      }
+      parser.on("-e", "--exact", "print exact solutions only, otherwise nothing") {
+        @exact = true
+      }
+      parser.on("-m", "--many", "if many exact solutions exist then print all of them") {
+        @just_one = false
+      }
+      parser.on("-s STEPS", "--max-steps=STEPS", "only print solutions with up to STEPS steps") { |s|
+        @max_steps = s.to_i
+        raise "need at least 1 step" unless @max_steps >= 1
+      }
+      parser.on("-b", "--big", "use arbitrary-precision integer arithmetic in anarchy mode") {
+        @big = true
+      }
+      parser.on("-h", "--help", "Show this help") {
+        puts parser
+        exit(0)
+      }
+      parser.invalid_option do |flag|
+        STDERR.puts "ERROR: #{flag} is not a valid option."
+        STDERR.puts parser
+        exit(1)
+      end
+    end
+    
   end
 end
 
+conf = Config.new
+
 begin
   if ARGV.size > 0
-    Game.new(max_steps, big, quick, anarchy, exact, just_one, ARGV).solve(false)
+    Game.new(conf, ARGV).solve(false)
   else
     STDIN.each_line do |line|
-      Game.new(max_steps, big, quick, anarchy, exact, just_one, line.chomp.split).solve(true)
+      Game.new(conf, line.chomp.split).solve(true)
     end
   end
 rescue e : Exception
