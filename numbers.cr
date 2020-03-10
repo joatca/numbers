@@ -200,7 +200,7 @@ struct Game
              end
     # if any of the source numbers match the target then just print that and exit
     if @sources.includes?(@target)
-      STDOUT << "#{@target}=#{@target}"
+      STDOUT << "#{@target}=#{@target}\n"
     else
       # when we have more than one depth this could take a bit longer, but will find the shortest number of
       # steps so could also be faster and the results are aesthetically better
@@ -218,7 +218,7 @@ struct Game
         else
           unless @conf.exact
             show_problem(STDOUT)
-            STDOUT << "none"
+            STDOUT << "none\n"
           end
         end
       end
