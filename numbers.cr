@@ -135,7 +135,8 @@ struct Game
         # we can just call show_steps immediately
         with_step(Step.new(op.sym, v1, v2, result)) do
           if result == @target
-            show_steps(@steps, 0)
+            show_problem(STDOUT)
+            show_steps(STDOUT, @steps, 0)
             found = true
             @found_exact = true
           else
@@ -181,12 +182,16 @@ struct Game
     return false
   end
 
-  def show_steps(steps, away = 0_i64)
-    steps.join("; ", STDOUT) # works because of Step#to_s
-    puts (away > 0_i64 ? " (#{away} away)" : "")
+  def show_steps(io : IO, steps, away = 0_i64)
+    steps.join("; ", io) # works because of Step#to_s
+    io << (away > 0_i64 ? " (#{away} away)\n" : "\n")
+  end
+
+  def show_problem(io : IO)
+    io << "#{@sources.join(",")};#{@target} "
   end
   
-  def solve(show_problem : Bool)
+  def solve
     max_depth = [ @sources.size, @conf.max_steps+1 ].min
     depths = if @conf.quick || !@conf.just_one
                [ max_depth ]
@@ -195,7 +200,7 @@ struct Game
              end
     # if any of the source numbers match the target then just print that and exit
     if @sources.includes?(@target)
-      puts "#{@target}=#{@target}"
+      STDOUT << "#{@target}=#{@target}"
     else
       # when we have more than one depth this could take a bit longer, but will find the shortest number of
       # steps so could also be faster and the results are aesthetically better
@@ -208,12 +213,12 @@ struct Game
       if ! @found_exact
         # only print non-exact solutions if we didn't find any exact ones
         if @best_away <= @maxaway
-          print "#{@sources.join(",")};#{@target} " if show_problem
-          show_steps(@best, @best_away)
+          show_problem(STDOUT)
+          show_steps(STDOUT, @best, @best_away)
         else
           unless @conf.exact
-            print "#{@sources.join(",")};#{@target} " if show_problem
-            puts "none"
+            show_problem(STDOUT)
+            STDOUT << "none"
           end
         end
       end
@@ -273,10 +278,10 @@ conf = Config.new
 
 begin
   if ARGV.size > 0
-    Game.new(conf, ARGV).solve(false)
+    Game.new(conf, ARGV).solve
   else
     STDIN.each_line do |line|
-      Game.new(conf, line.chomp.split).solve(true)
+      Game.new(conf, line.chomp.split).solve
     end
   end
 rescue e : Exception
